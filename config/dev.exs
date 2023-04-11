@@ -13,3 +13,4 @@ config :logger, :account,
   level: :debug,
   path: Path.absname("logs/dev/account.log"),
   metadata_filter: [fetcher: :account]
+
