@@ -19,14 +19,17 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <a class="nav-link topnav-nav-link active-icon" href="https://wannsee-status.mxc.com/" target="_blank">
-        <span class="nav-link-icon">
-          <%= render BlockScoutWeb.IconsView, "_status_icon.html" %>
-        </span>
-        <%= gettext("Status") %>
-      </a>
       <ul class="navbar-nav">
         <%= if Application.get_env(:block_scout_web, BlockScoutWeb.WebRouter)[:enabled] do %>
+          <li class="nav-item">
+            <a class="nav-link topnav-nav-link active-icon" href="https://wannsee-status.mxc.com/" target="_blank">
+              <span class="nav-link-icon">
+                <%= render BlockScoutWeb.IconsView, "_status_icon.html" %>
+              </span>
+              <%= gettext("Status") %>
+            </a>
+          </li>
+
           <li class="nav-item dropdown">
             <a class="nav-link topnav-nav-link dropdown-toggle" href="#" id="navbarBlocksDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               <span class="nav-link-icon">
