@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  stats:
+    platform: linux/x86_64
+    image: ghcr.io/blockscout/stats:${VISUALIZER_DOCKER_TAG:-latest}
+    pull_policy: always
+    restart: always
+    container_name: 'stats'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    environment:
+      STATS__DB_URL: postgresql://postgres:@host.docker.internal:7432/stats?ssl=false
+      STATS__BLOCKSCOUT_DB_URL: postgresql://postgres:@host.docker.internal:7432/blockscout?ssl=false
+    ports:
+      - 8153:8050

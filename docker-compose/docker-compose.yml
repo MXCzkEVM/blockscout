@@ -29,7 +29,7 @@ services:
         CACHE_ENABLE_TOTAL_GAS_USAGE_COUNTER: ""
         CACHE_ADDRESS_WITH_BALANCES_UPDATE_INTERVAL: ""
         WOBSERVER_ENABLED: "false"
-        ADMIN_PANEL_ENABLED: ""
+        ADMIN_PANEL_ENABLED: "false"
         RELEASE_VERSION: 5.1.2
     restart: always
     stop_grace_period: 5m
@@ -43,7 +43,6 @@ services:
       -  ./envs/common-blockscout.env
     ports:
       - 4000:4000
-      - 80:4000
     volumes:
       - ./logs/:/app/logs/
 
@@ -61,3 +60,8 @@ services:
     extends:
       file: ./services/docker-compose-sig-provider.yml
       service: sig-provider
+
+  stats:
+    extends:
+      file: ./services/docker-compose-stats.yml
+      service: stats
