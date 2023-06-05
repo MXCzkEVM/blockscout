@@ -18,6 +18,8 @@ defmodule Explorer.Application do
     GasUsage,
     MinMissingBlockNumber,
     NetVersion,
+    PendingBlockOperation,
+    StateChanges,
     Transaction,
     Transactions,
     TransactionsApiV2,
@@ -55,22 +57,25 @@ defmodule Explorer.Application do
       Explorer.SmartContract.VyperDownloader,
       {Registry, keys: :duplicate, name: Registry.ChainEvents, id: Registry.ChainEvents},
       {Admin.Recovery, [[], [name: Admin.Recovery]]},
-      Transaction,
+      Accounts,
       AddressSum,
       AddressSumMinusBurnt,
       Block,
+      BlockNumber,
       Blocks,
       GasPriceOracle,
       GasUsage,
       NetVersion,
-      BlockNumber,
-      con_cache_child_spec(MarketHistoryCache.cache_name()),
-      con_cache_child_spec(RSK.cache_name(), ttl_check_interval: :timer.minutes(1), global_ttl: :timer.minutes(30)),
+      PendingBlockOperation,
+      Transaction,
+      StateChanges,
       Transactions,
       TransactionsApiV2,
-      Accounts,
       Uncles,
-      {Redix, redix_opts()}
+      con_cache_child_spec(MarketHistoryCache.cache_name()),
+      con_cache_child_spec(RSK.cache_name(), ttl_check_interval: :timer.minutes(1), global_ttl: :timer.minutes(30)),
+      {Redix, redix_opts()},
+      {Explorer.Utility.MissingRangesManipulator, []}
     ]
 
     children = base_children ++ configurable_children()
@@ -92,6 +97,7 @@ defmodule Explorer.Application do
       configure(Explorer.Chain.Cache.NewVerifiedContractsCounter),
       configure(Explorer.Chain.Cache.TransactionActionTokensData),
       configure(Explorer.Chain.Cache.TransactionActionUniswapPools),
+      configure(Explorer.Chain.Cache.WithdrawalsSum),
       configure(Explorer.Chain.Transaction.History.Historian),
       configure(Explorer.Chain.Events.Listener),
       configure(Explorer.Counters.AddressesWithBalanceCounter),
@@ -111,7 +117,8 @@ defmodule Explorer.Application do
       configure(MinMissingBlockNumber),
       configure(TokenTransferTokenIdMigration.Supervisor),
       configure(Explorer.Chain.Fetcher.CheckBytecodeMatchingOnDemand),
-      configure(Explorer.Chain.Fetcher.FetchValidatorInfoOnDemand)
+      configure(Explorer.Chain.Fetcher.FetchValidatorInfoOnDemand),
+      sc_microservice_configure(Explorer.Chain.Fetcher.LookUpSmartContractSourcesOnDemand)
     ]
     |> List.flatten()
   end
@@ -122,6 +129,16 @@ defmodule Explorer.Application do
 
   defp configure(process) do
     if should_start?(process) do
+      process
+    else
+      []
+    end
+  end
+
+  defp sc_microservice_configure(process) do
+    config = Application.get_env(:explorer, Explorer.SmartContract.RustVerifierInterfaceBehaviour, [])
+
+    if config[:enabled] && config[:type] == "eth_bytecode_db" do
       process
     else
       []
