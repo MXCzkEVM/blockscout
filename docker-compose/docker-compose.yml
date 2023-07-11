@@ -43,6 +43,7 @@ services:
       - 4000:4000
     volumes:
       - ./logs/:/app/logs/
+      - ./envs/mxc.json:/app/mxc.json
 
   smart-contract-verifier:
     extends:
