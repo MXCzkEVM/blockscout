@@ -22,7 +22,7 @@
       <ul class="navbar-nav">
         <%= if Application.get_env(:block_scout_web, BlockScoutWeb.WebRouter)[:enabled] do %>
           <li class="nav-item">
-            <a class="nav-link topnav-nav-link active-icon" href="https://wannsee-status.mxc.com/" target="_blank">
+            <a class="nav-link topnav-nav-link active-icon" href="https://status.mxc.com/" target="_blank">
               <span class="nav-link-icon">
                 <%= render BlockScoutWeb.IconsView, "_status_icon.html" %>
               </span>

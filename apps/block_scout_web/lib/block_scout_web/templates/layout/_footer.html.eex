@@ -41,7 +41,7 @@
       </div>
 
       <div class="col-xs-12 col-md-4 col-lg-<%= col_size %> footer-list">
-        <h3>MXC ZkEvm Wannsee</h3>
+        <h3>MXC ZkEvm Mainnet</h3>
         <ul>
           <li><a href="https://github.com/MXCzkEVM/mxc-mono/issues" rel="noreferrer" class="footer-link" target="_blank"><%= gettext("Submit an Issue") %></a></li>
           <li><a href="https://github.com/MXCzkEVM/mxc-mono" rel="noreferrer" class="footer-link"><%= gettext("Contribute") %></a></li>
