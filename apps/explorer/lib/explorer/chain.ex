@@ -798,7 +798,9 @@ defmodule Explorer.Chain do
   end
 
   def txn_fees(transactions) do
-    Enum.reduce(transactions, Decimal.new(0), fn %{gas_used: gas_used, gas_price: gas_price}, acc ->
+    transactions
+    |> Enum.drop(1) # ignore the first transaction
+    |> Enum.reduce(Decimal.new(0), fn %{gas_used: gas_used, gas_price: gas_price}, acc ->
       gas_used
       |> Decimal.new()
       |> Decimal.mult(gas_price_to_decimal(gas_price))
