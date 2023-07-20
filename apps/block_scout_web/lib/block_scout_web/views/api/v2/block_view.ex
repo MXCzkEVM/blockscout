@@ -5,6 +5,7 @@ defmodule BlockScoutWeb.API.V2.BlockView do
   alias BlockScoutWeb.API.V2.{ApiView, Helper}
   alias Explorer.Chain
   alias Explorer.Chain.Block
+  alias Explorer.Chain.Wei
   alias Explorer.Counters.BlockPriorityFeeCounter
 
   def render("message.json", assigns) do
@@ -64,12 +65,17 @@ defmodule BlockScoutWeb.API.V2.BlockView do
   end
 
   def prepare_rewards(rewards, block, single_block?) do
-    Enum.map(rewards, &prepare_reward(&1, block, single_block?))
+        Enum.map(rewards, &prepare_reward(&1, block, single_block?))
   end
 
   def prepare_reward(reward, block, single_block?) do
+    {:ok, result} = EthereumJSONRPC.fetch_blocks_by_numbers([block.number], Application.fetch_env!(:indexer, :json_rpc_named_arguments))
+    extra_data = result.blocks_params
+                |> List.first()
+                |> Map.get(:extra_data)
+    {:ok, extra_data_decimal} = Wei.cast(extra_data)
     %{
-      "reward" => reward.reward,
+      "reward" => extra_data_decimal,
       "type" => if(single_block?, do: BlockView.block_reward_text(reward, block.miner.hash), else: reward.address_type)
     }
   end

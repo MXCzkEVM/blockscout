@@ -236,7 +236,9 @@
                     text: gettext("Amount of distributed reward. Miners receive a static block reward + Tx fees + uncle fees.") %>
                     <%= block_reward_text(block_reward, @block.miner.hash) %>
                   </dt>
-                  <dd class="col-sm-9 col-lg-10"><%= format_wei_value(block_reward.reward, :ether) %></dd>
+                  <dd class="col-sm-9 col-lg-10"><%= @block
+    |> Chain.block_combined_rewards()
+    |> format_wei_value(:ether) %></dd>
                 </dl>
             <% end %>
           <% end %>
