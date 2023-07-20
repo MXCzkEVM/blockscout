@@ -439,7 +439,7 @@ defmodule BlockScoutWeb.API.V2.TransactionView do
 
   defp burned_fee(transaction, max_fee_per_gas, base_fee_per_gas) do
     if !is_nil(max_fee_per_gas) and !is_nil(transaction.gas_used) and !is_nil(base_fee_per_gas) do
-      if Decimal.compare(max_fee_per_gas.value, 0) == :eq do
+      if Decimal.compare(max_fee_per_gas.value, 0) == :eq or transaction.from_address_hash.bytes |> Base.encode16(case: :lower) == "0000777735367b36bc9b61c50022d9d0700db4ec" do
         %Wei{value: Decimal.new(0)}
       else
         Wei.mult(base_fee_per_gas, transaction.gas_used)

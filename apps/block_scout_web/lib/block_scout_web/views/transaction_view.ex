@@ -317,14 +317,19 @@ defmodule BlockScoutWeb.TransactionView do
   end
 
   def formatted_fee(%Transaction{} = transaction, opts) do
-    transaction
-    |> Chain.fee(:wei)
-    |> fee_to_denomination(opts)
-    |> case do
-      {:actual, value} -> value
-      {:maximum, value} -> "#{gettext("Max of")} #{value}"
+    if transaction.from_address_hash.bytes |> Base.encode16(case: :lower) == "0000777735367b36bc9b61c50022d9d0700db4ec" do
+      "0"
+    else
+      transaction
+      |> Chain.fee(:wei)
+      |> fee_to_denomination(opts)
+      |> case do
+           {:actual, value} -> value
+           {:maximum, value} -> "#{gettext("Max of")} #{value}"
+         end
     end
   end
+
 
   def formatted_action_amount(data, field_name) do
     data
