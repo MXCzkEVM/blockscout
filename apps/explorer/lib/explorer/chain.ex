@@ -799,7 +799,15 @@ defmodule Explorer.Chain do
 
   def txn_fees(transactions) do
     transactions
-    |> Enum.drop(1) # ignore the first transaction
+    |> Enum.filter(fn %{from_address_hash: from_address_hash} ->
+      case from_address_hash do
+        %Explorer.Chain.Hash{bytes: bytes} ->
+          Base.encode16(bytes, case: :lower) != "0000777735367b36bc9b61c50022d9d0700db4ec"
+
+        string when is_binary(string) ->
+          String.downcase(string) != "0x0000777735367b36bc9b61c50022d9d0700db4ec"
+      end
+    end)
     |> Enum.reduce(Decimal.new(0), fn %{gas_used: gas_used, gas_price: gas_price}, acc ->
       gas_used
       |> Decimal.new()
@@ -814,7 +822,16 @@ defmodule Explorer.Chain do
   def burned_fees(transactions, base_fee_per_gas) do
     burned_fee_counter =
       transactions
-      |> Enum.drop(1)
+      |> Enum.filter(fn %{from_address_hash: from_address_hash} ->
+        case from_address_hash do
+          %Explorer.Chain.Hash{bytes: bytes} ->
+            Base.encode16(bytes, case: :lower) != "0000777735367b36bc9b61c50022d9d0700db4ec"
+
+          string when is_binary(string) ->
+            String.downcase(string) != "0x0000777735367b36bc9b61c50022d9d0700db4ec"
+        end
+      end)
+
       |> Enum.reduce(Decimal.new(0), fn %{gas_used: gas_used}, acc ->
         gas_used
         |> Decimal.new()
