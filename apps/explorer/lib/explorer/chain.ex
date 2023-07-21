@@ -1264,22 +1264,37 @@ defmodule Explorer.Chain do
 
   """
   @spec fee(Transaction.t(), :ether | :gwei | :wei) :: {:maximum, Decimal.t()} | {:actual, Decimal.t()}
-  def fee(%Transaction{gas: gas, gas_price: gas_price, gas_used: nil}, unit) do
+  def fee(%Transaction{gas: gas, gas_price: gas_price, gas_used: nil, from_address_hash: from_address_hash}, unit) do
     fee =
-      gas_price
-      |> Wei.to(unit)
-      |> Decimal.mult(gas)
-
+      if is_special_address?(from_address_hash) do
+        Decimal.new(0)
+      else
+          gas_price
+          |> Wei.to(unit)
+          |> Decimal.mult(gas)
+      end
     {:maximum, fee}
   end
 
-  def fee(%Transaction{gas_price: gas_price, gas_used: gas_used}, unit) do
+  def fee(%Transaction{gas_price: gas_price, gas_used: gas_used, from_address_hash: from_address_hash}, unit) do
     fee =
-      gas_price
-      |> Wei.to(unit)
-      |> Decimal.mult(gas_used)
+      if is_special_address?(from_address_hash) do
+        Decimal.new(0)
+      else
+          gas_price
+          |> Wei.to(unit)
+          |> Decimal.mult(gas_used)
+      end
 
     {:actual, fee}
+  end
+
+  defp is_special_address?(%Explorer.Chain.Hash{bytes: bytes}) do
+    Base.encode16(bytes, case: :lower) == "0000777735367b36bc9b61c50022d9d0700db4ec"
+  end
+
+  defp is_special_address?(string) when is_binary(string) do
+    String.downcase(string) == "0x0000777735367b36bc9b61c50022d9d0700db4ec"
   end
 
   @doc """
