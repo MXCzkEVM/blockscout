@@ -57,7 +57,7 @@ defmodule Explorer.Counters.BlockBurnedFeeCounter do
 
   defp update_cache(block_hash) do
     block_hash_string = get_block_hash_string(block_hash)
-    new_data = Chain.block_to_gas_used_by_1559_txs(block_hash)
+    new_data = Chain.block_to_gas_used_by_1559_txs_expect_anchor_tx(block_hash)
     put_into_cache("#{block_hash_string}", new_data)
   end
 

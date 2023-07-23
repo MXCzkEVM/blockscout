@@ -798,7 +798,17 @@ defmodule Explorer.Chain do
   end
 
   def txn_fees(transactions) do
-    Enum.reduce(transactions, Decimal.new(0), fn %{gas_used: gas_used, gas_price: gas_price}, acc ->
+    transactions
+    |> Enum.filter(fn %{from_address_hash: from_address_hash} ->
+      case from_address_hash do
+        %Explorer.Chain.Hash{bytes: bytes} ->
+          Base.encode16(bytes, case: :lower) != "0000777735367b36bc9b61c50022d9d0700db4ec"
+
+        string when is_binary(string) ->
+          String.downcase(string) != "0x0000777735367b36bc9b61c50022d9d0700db4ec"
+      end
+    end)
+    |> Enum.reduce(Decimal.new(0), fn %{gas_used: gas_used, gas_price: gas_price}, acc ->
       gas_used
       |> Decimal.new()
       |> Decimal.mult(gas_price_to_decimal(gas_price))
@@ -812,6 +822,16 @@ defmodule Explorer.Chain do
   def burned_fees(transactions, base_fee_per_gas) do
     burned_fee_counter =
       transactions
+      |> Enum.filter(fn %{from_address_hash: from_address_hash} ->
+        case from_address_hash do
+          %Explorer.Chain.Hash{bytes: bytes} ->
+            Base.encode16(bytes, case: :lower) != "0000777735367b36bc9b61c50022d9d0700db4ec"
+
+          string when is_binary(string) ->
+            String.downcase(string) != "0x0000777735367b36bc9b61c50022d9d0700db4ec"
+        end
+      end)
+
       |> Enum.reduce(Decimal.new(0), fn %{gas_used: gas_used}, acc ->
         gas_used
         |> Decimal.new()
@@ -950,6 +970,24 @@ defmodule Explorer.Chain do
       from(
         tx in Transaction,
         where: tx.block_hash == ^block_hash,
+        select: sum(tx.gas_used)
+      )
+
+    result = Repo.one(query)
+    if result, do: result, else: 0
+  end
+
+  @doc """
+  Finds sum of gas_used for new (EIP-1559) txs belongs to block expect anchor tx
+  """
+  @spec block_to_gas_used_by_1559_txs_expect_anchor_tx(Hash.Full.t()) :: non_neg_integer()
+  def block_to_gas_used_by_1559_txs_expect_anchor_tx(block_hash) do
+    excluded_address = "0000777735367b36bc9b61c50022d9d0700db4ec"
+    excluded_address_bin = excluded_address |> Base.decode16!(case: :lower)
+    query =
+      from(
+        tx in Transaction,
+        where: tx.block_hash == ^block_hash and tx.from_address_hash != ^excluded_address_bin,
         select: sum(tx.gas_used)
       )
 
@@ -1226,22 +1264,37 @@ defmodule Explorer.Chain do
 
   """
   @spec fee(Transaction.t(), :ether | :gwei | :wei) :: {:maximum, Decimal.t()} | {:actual, Decimal.t()}
-  def fee(%Transaction{gas: gas, gas_price: gas_price, gas_used: nil}, unit) do
+  def fee(%Transaction{gas: gas, gas_price: gas_price, gas_used: nil, from_address_hash: from_address_hash}, unit) do
     fee =
-      gas_price
-      |> Wei.to(unit)
-      |> Decimal.mult(gas)
-
+      if is_special_address?(from_address_hash) do
+        Decimal.new(0)
+      else
+          gas_price
+          |> Wei.to(unit)
+          |> Decimal.mult(gas)
+      end
     {:maximum, fee}
   end
 
-  def fee(%Transaction{gas_price: gas_price, gas_used: gas_used}, unit) do
+  def fee(%Transaction{gas_price: gas_price, gas_used: gas_used, from_address_hash: from_address_hash}, unit) do
     fee =
-      gas_price
-      |> Wei.to(unit)
-      |> Decimal.mult(gas_used)
+      if is_special_address?(from_address_hash) do
+        Decimal.new(0)
+      else
+          gas_price
+          |> Wei.to(unit)
+          |> Decimal.mult(gas_used)
+      end
 
     {:actual, fee}
+  end
+
+  defp is_special_address?(%Explorer.Chain.Hash{bytes: bytes}) do
+    Base.encode16(bytes, case: :lower) == "0000777735367b36bc9b61c50022d9d0700db4ec"
+  end
+
+  defp is_special_address?(string) when is_binary(string) do
+    String.downcase(string) == "0x0000777735367b36bc9b61c50022d9d0700db4ec"
   end
 
   @doc """
@@ -5816,18 +5869,12 @@ defmodule Explorer.Chain do
   """
   @spec block_combined_rewards(Block.t()) :: Wei.t()
   def block_combined_rewards(block) do
-    {:ok, value} =
-      block.rewards
-      |> Enum.reduce(
-        0,
-        fn block_reward, acc ->
-          {:ok, decimal} = Wei.dump(block_reward.reward)
+    {:ok, result} = EthereumJSONRPC.fetch_blocks_by_numbers([block.number], Application.fetch_env!(:indexer, :json_rpc_named_arguments))
 
-          Decimal.add(decimal, acc)
-        end
-      )
-      |> Wei.cast()
-
+    extra_data = result.blocks_params
+    |> List.first()
+    |> Map.get(:extra_data)
+    {:ok, value} = Wei.cast(extra_data)
     value
   end
 

@@ -5,6 +5,7 @@ defmodule BlockScoutWeb.API.V2.BlockView do
   alias BlockScoutWeb.API.V2.{ApiView, Helper}
   alias Explorer.Chain
   alias Explorer.Chain.Block
+  alias Explorer.Chain.Wei
   alias Explorer.Counters.BlockPriorityFeeCounter
 
   def render("message.json", assigns) do
@@ -48,7 +49,7 @@ defmodule BlockScoutWeb.API.V2.BlockView do
       "gas_limit" => block.gas_limit,
       "nonce" => block.nonce,
       "base_fee_per_gas" => block.base_fee_per_gas,
-      "burnt_fees" => burned_fee,
+      "burnt_fees" => tx_fees,
       "priority_fee" => priority_fee,
       "extra_data" => "TODO",
       "uncles_hashes" => prepare_uncles(block.uncle_relations),
@@ -56,7 +57,7 @@ defmodule BlockScoutWeb.API.V2.BlockView do
       "rewards" => prepare_rewards(block.rewards, block, single_block?),
       "gas_target_percentage" => gas_target(block),
       "gas_used_percentage" => gas_used_percentage(block),
-      "burnt_fees_percentage" => burnt_fees_percentage(burned_fee, tx_fees),
+      "burnt_fees_percentage" => burnt_fees_percentage(tx_fees, tx_fees),
       "type" => block |> BlockView.block_type() |> String.downcase(),
       "tx_fees" => tx_fees,
       "withdrawals_count" => count_withdrawals(block)
@@ -64,12 +65,17 @@ defmodule BlockScoutWeb.API.V2.BlockView do
   end
 
   def prepare_rewards(rewards, block, single_block?) do
-    Enum.map(rewards, &prepare_reward(&1, block, single_block?))
+        Enum.map(rewards, &prepare_reward(&1, block, single_block?))
   end
 
   def prepare_reward(reward, block, single_block?) do
+    {:ok, result} = EthereumJSONRPC.fetch_blocks_by_numbers([block.number], Application.fetch_env!(:indexer, :json_rpc_named_arguments))
+    extra_data = result.blocks_params
+                |> List.first()
+                |> Map.get(:extra_data)
+    {:ok, extra_data_decimal} = Wei.cast(extra_data)
     %{
-      "reward" => reward.reward,
+      "reward" => extra_data_decimal,
       "type" => if(single_block?, do: BlockView.block_reward_text(reward, block.miner.hash), else: reward.address_type)
     }
   end
@@ -97,7 +103,7 @@ defmodule BlockScoutWeb.API.V2.BlockView do
   def burnt_fees_percentage(_, %Decimal{coef: 0}), do: nil
 
   def burnt_fees_percentage(burnt_fees, tx_fees) when not is_nil(tx_fees) and not is_nil(burnt_fees) do
-    burnt_fees.value |> Decimal.div(tx_fees) |> Decimal.mult(100) |> Decimal.to_float()
+    Decimal.new(100)
   end
 
   def burnt_fees_percentage(_, _), do: nil
