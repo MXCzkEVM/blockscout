@@ -142,11 +142,15 @@ defmodule Explorer.Factory do
 
   def address_to_tag_factory do
     %AddressToTag{
-      tag: %AddressTag{
-        label: sequence("label"),
-        display_name: sequence("display_name")
-      },
+      tag: build(:address_tag),
       address: build(:address)
+    }
+  end
+
+  def address_tag_factory do
+    %AddressTag{
+      label: sequence("label"),
+      display_name: sequence("display_name")
     }
   end
 
@@ -654,7 +658,10 @@ defmodule Explorer.Factory do
       decimals: 18,
       contract_address: build(:address),
       type: "ERC-20",
-      cataloged: true
+      cataloged: true,
+      icon_url: sequence("https://example.com/icon"),
+      fiat_value: 10.1,
+      is_verified_via_admin_panel: Enum.random([true, false])
     }
   end
 
@@ -893,7 +900,7 @@ defmodule Explorer.Factory do
       address: build(:address),
       token_contract_address_hash: insert(:token).contract_address_hash,
       block_number: block_number(),
-      value: Enum.random(1..100_000),
+      value: Enum.random(1_000_000_000_000_000_000..10_000_000_000_000_000_000),
       value_fetched_at: DateTime.utc_now(),
       token_id: token_id,
       token_type: token_type
